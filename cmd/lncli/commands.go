@@ -2075,6 +2075,10 @@ func paymentFlags() []cli.Flag {
 			Name:  "force, f",
 			Usage: "will skip payment request confirmation",
 		},
+		cli.BoolFlag{
+			Name:  "key_send",
+			Usage: "will generate a pre-image and encode it in the sphinx packet, a dest must be set",
+		},
 	}
 }
 
@@ -2224,13 +2228,14 @@ func sendPayment(ctx *cli.Context) error {
 	}
 
 	req := &lnrpc.SendRequest{
-		Dest: destNode,
-		Amt:  amount,
+		Dest:    destNode,
+		Amt:     amount,
+		KeySend: ctx.Bool("key_send"),
 	}
 
 	if ctx.Bool("debug_send") && (ctx.IsSet("payment_hash") || args.Present()) {
 		return fmt.Errorf("do not provide a payment hash with debug send")
-	} else if !ctx.Bool("debug_send") {
+	} else if !ctx.Bool("debug_send") && !ctx.Bool("key_send") {
 		var rHash []byte
 
 		switch {

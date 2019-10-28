@@ -1602,6 +1602,8 @@ type LightningPayment struct {
 	// understand this new onion payload format, then the payment will
 	// fail.
 	FinalDestRecords []tlv.Record
+
+	DestinationEOB []byte
 }
 
 // SendPayment attempts to send a payment as described within the passed

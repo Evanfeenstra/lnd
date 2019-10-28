@@ -1,6 +1,7 @@
 package invoices
 
 import (
+	"bytes"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -10,6 +11,7 @@ import (
 	"github.com/lightningnetwork/lnd/lntypes"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/queue"
+	"github.com/lightningnetwork/lnd/tlv"
 )
 
 var (
@@ -426,6 +428,8 @@ func (i *InvoiceRegistry) LookupInvoice(rHash lntypes.Hash) (channeldb.Invoice,
 // to be taken on the htlc (settle or cancel). The caller needs to ensure that
 // the channel is either buffered or received on from another goroutine to
 // prevent deadlock.
+const stateType tlv.Type = 15
+
 func (i *InvoiceRegistry) NotifyExitHopHtlc(rHash lntypes.Hash,
 	amtPaid lnwire.MilliSatoshi, expiry uint32, currentHeight int32,
 	circuitKey channeldb.CircuitKey, hodlChan chan<- interface{},
@@ -437,6 +441,48 @@ func (i *InvoiceRegistry) NotifyExitHopHtlc(rHash lntypes.Hash,
 	debugLog := func(s string) {
 		log.Debugf("Invoice(%x): %v, amt=%v, expiry=%v, circuit=%v",
 			rHash[:], s, amtPaid, expiry, circuitKey)
+	}
+
+	// If any EOB data was provided, then we'll attempt to decode the TLV
+	// information included, as it may modify when/how we settle the HTLC.
+	if len(eob) != 0 {
+		log.Infof("TLV packet other: %x", eob)
+		log.Infof("TRY TO DECODE TLV")
+
+		// Atm, the only TLV field that we care about is the one that
+		// denotes a pre-image has been sent to us in the encrypted EOB, so
+		// we'll attempt to parse that out.
+		var (
+			preImage      [32]byte
+			blankPreImage [32]byte
+		)
+		tlvStream, err := tlv.NewStream(
+			tlv.MakePrimitiveRecord(PreimageTLV, &preImage),
+		) // instead of this was "PreImageTLV" = 128
+		err = tlvStream.Decode(
+			bytes.NewReader(eob),
+		)
+		if err != nil {
+			log.Errorf(err.Error())
+			return nil, err
+		}
+
+		// If something was acutally specified for this tag, then we'll
+		// check to see if it matches up with the payment hash.
+		paymentSecret := lntypes.Preimage(preImage)
+		if preImage != blankPreImage && paymentSecret.Matches(rHash) {
+
+			debugLog("settled")
+
+			// TODO(roasbeef): record settled spontaneous payment
+			// in DB
+
+			return &HodlEvent{
+				CircuitKey:   circuitKey,
+				AcceptHeight: currentHeight,
+				Preimage:     &paymentSecret,
+			}, nil
+		}
 	}
 
 	// Default is to not update subscribers after the invoice update.

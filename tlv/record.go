@@ -12,6 +12,11 @@ import (
 // Type is an 64-bit identifier for a TLV Record.
 type Type uint64
 
+// SentinelType is the identifier for the sentinel record. It uses the highest
+// possible identifier so that it always occurs at the end of a stream when
+// present.
+const SentinelType Type = 255
+
 // TypeSet is an unordered set of Types.
 type TypeSet map[Type]struct{}
 
@@ -75,6 +80,13 @@ func (f *Record) Encode(w io.Writer) error {
 	var b [8]byte
 
 	return f.encoder(w, f.value, &b)
+}
+
+// MakeSentinelRecord creates a sentinel record with type 255.
+func MakeSentinelRecord() Record {
+	return Record{
+		typ: SentinelType,
+	}
 }
 
 // MakePrimitiveRecord creates a record for common types.

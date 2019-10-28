@@ -6,10 +6,11 @@ package lnrpc
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1064,6 +1065,12 @@ type SendRequest struct {
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
+
+	// If set, then no payment hash is required. Instead, we will generate a
+	// payment hash ourselves, and encode the pre-image in an EOB encrypted to the
+	// final hop. Not that the payment request MUST NOT be specified in order for
+	// this flag to be parsed. If set, then the dest MUST be set.
+	KeySend bool `protobuf:"varint,11,opt,name=key_send,json=keySend,proto3" json:"key_send,omitempty"`
 }
 
 func (m *SendRequest) Reset()         { *m = SendRequest{} }

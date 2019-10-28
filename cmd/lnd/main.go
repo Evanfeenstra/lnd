@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	fmt.Println("MAIN!!!")
 	// Call the "real" main in a nested manner so the defers will properly
 	// be executed in the case of a graceful shutdown.
 	if err := lnd.Main(lnd.ListenerCfg{}); err != nil {
