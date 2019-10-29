@@ -159,6 +159,7 @@ func (s *Stream) DecodeWithParsedTypes(r io.Reader) (TypeSet, error) {
 // the caller needs the set of parsed types, it must provide an initialized
 // parsedTypes, otherwise the returned TypeSet will be nil.
 func (s *Stream) decode(r io.Reader, parsedTypes TypeSet) (TypeSet, error) {
+	fmt.Println("TLV decode")
 	var (
 		typ       Type
 		min       Type
@@ -184,6 +185,7 @@ func (s *Stream) decode(r io.Reader, parsedTypes TypeSet) (TypeSet, error) {
 		}
 
 		typ = Type(t)
+		fmt.Printf("TYP: %d\n", typ)
 
 		// Assert that this type is greater than any previously read.
 		// If we've already overflowed and we parsed another type, the
@@ -220,6 +222,9 @@ func (s *Stream) decode(r io.Reader, parsedTypes TypeSet) (TypeSet, error) {
 		// begin the search and recordIdx and walk forward until we find
 		// it or the next record's type is larger.
 		rec, newIdx, ok := s.getRecord(typ, recordIdx)
+		fmt.Printf("REC: %+v\n", rec)
+		fmt.Printf("newIdx: %d\n", newIdx)
+		fmt.Printf("OK: %t\n", ok)
 		switch {
 
 		// We know of this record type, proceed to decode the value.

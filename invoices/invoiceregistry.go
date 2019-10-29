@@ -2,7 +2,10 @@ package invoices
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -457,22 +460,34 @@ func (i *InvoiceRegistry) NotifyExitHopHtlc(rHash lntypes.Hash,
 			blankPreImage [32]byte
 		)
 		tlvStream, err := tlv.NewStream(
-			tlv.MakePrimitiveRecord(PreimageTLV, &preImage),
+			tlv.MakePrimitiveRecord(1, &preImage),
 		) // instead of this was "PreImageTLV" = 128
 		err = tlvStream.Decode(
 			bytes.NewReader(eob),
 		)
 		if err != nil {
 			log.Errorf(err.Error())
-			return nil, err
+			/* HANDle THIS ERROR! */
+			//return nil, err
 		}
+
+		dst := make([]byte, hex.EncodedLen(len(preImage[:])))
+		hex.Encode(dst, preImage[:])
+
+		fmt.Printf("PREIMAGE: %s\n", dst)
+
+		fmt.Printf("EMPTY: %t\n", preImage == blankPreImage)
+		fmt.Printf("RHASH: %s\n", rHash)
+		fmt.Printf("NEW HASH: %s\n", lntypes.Hash(sha256.Sum256(preImage[:])))
 
 		// If something was acutally specified for this tag, then we'll
 		// check to see if it matches up with the payment hash.
 		paymentSecret := lntypes.Preimage(preImage)
+		fmt.Printf("MATCHES: %t\n", paymentSecret.Matches(rHash))
 		if preImage != blankPreImage && paymentSecret.Matches(rHash) {
 
 			debugLog("settled")
+			fmt.Println("SETTLED!!!")
 
 			// TODO(roasbeef): record settled spontaneous payment
 			// in DB

@@ -239,7 +239,7 @@ func NewRouteFromHops(amtToSend lnwire.MilliSatoshi, timeLock uint32,
 // contains the per-hop paylods used to encoding the HTLC routing data for each
 // hop in the route. This method also accepts an optional EOB payload for the
 // final hop.
-func (r *Route) ToSphinxPath() (*sphinx.PaymentPath, error) {
+func (r *Route) ToSphinxPath(destEOB []byte) (*sphinx.PaymentPath, error) {
 	var path sphinx.PaymentPath
 
 	// For each hop encoded within the route, we'll convert the hop struct

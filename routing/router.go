@@ -1478,7 +1478,7 @@ func generateNewSessionKey() (*btcec.PrivateKey, error) {
 // from this function can immediately be included within an HTLC add packet to
 // be sent to the first hop within the route.
 func generateSphinxPacket(rt *route.Route, paymentHash []byte,
-	sessionKey *btcec.PrivateKey) ([]byte, *sphinx.Circuit, error) {
+	sessionKey *btcec.PrivateKey, destEOB []byte) ([]byte, *sphinx.Circuit, error) {
 
 	// As a sanity check, we'll ensure that the set of hops has been
 	// properly filled in, otherwise, we won't actually be able to
@@ -1491,7 +1491,7 @@ func generateSphinxPacket(rt *route.Route, paymentHash []byte,
 	// sphinx payument path which includes per-hop paylods for each hop
 	// that give each node within the route the necessary information
 	// (fees, CLTV value, etc) to properly forward the payment.
-	sphinxPath, err := rt.ToSphinxPath()
+	sphinxPath, err := rt.ToSphinxPath(destEOB)
 	if err != nil {
 		return nil, nil, err
 	}

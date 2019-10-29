@@ -78,6 +78,7 @@ func (p *paymentLifecycle) resumePayment() ([32]byte, *route.Route, error) {
 			_, c, err := generateSphinxPacket(
 				&p.attempt.Route, p.payment.PaymentHash[:],
 				p.attempt.SessionKey,
+				p.payment.DestinationEOB,
 			)
 			if err != nil {
 				return [32]byte{}, nil, err
@@ -261,6 +262,7 @@ func (p *paymentLifecycle) createNewPaymentAttempt() (lnwire.ShortChannelID,
 	// switch.
 	onionBlob, c, err := generateSphinxPacket(
 		route, p.payment.PaymentHash[:], sessionKey,
+		p.payment.DestinationEOB,
 	)
 	if err != nil {
 		return lnwire.ShortChannelID{}, nil, err

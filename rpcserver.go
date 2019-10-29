@@ -3201,8 +3201,21 @@ func extractPaymentIntent(rpcPayReq *rpcPaymentRequest) (rpcPaymentIntent, error
 		rpcsLog.Infof("TLV bytes: %x", b.Bytes())
 		payIntent.eob = b.Bytes()
 
+		// tlvMap := map[uint64][]byte{
+		// 	1: b.Bytes(),
+		// }
+		// recs, err := tlv.MapToRecords(tlvMap)
+		rec := tlv.MakePrimitiveRecord(
+			1, &preImage,
+		)
+		payIntent.destTLV = []tlv.Record{rec}
+		if err != nil {
+			fmt.Printf("TLV MAP ERR: %s", err.Error())
+		}
+
 		// We'll also set the payment hash accordingly.
 		payHash := sha256.Sum256(preImage[:])
+		// payHash := preImage.Hash()
 		copy(payIntent.rHash[:], payHash[:])
 
 	case rpcPayReq.PaymentHashString != "":
@@ -3275,8 +3288,12 @@ func (r *rpcServer) dispatchPaymentIntent(
 		}
 
 		if payIntent.eob != nil {
-			payment.DestinationEOB = payIntent.eob
+			fmt.Println("============> EOB IS HERE, BUT SKIP! <==============")
+			// payment.DestinationEOB = payIntent.eob
 		}
+		fmt.Println("============> DEST TLV <==============")
+		fmt.Printf("%+v\n", payment.FinalDestRecords)
+		fmt.Println("============><==============")
 
 		preImage, route, routerErr = r.server.chanRouter.SendPayment(
 			payment,
@@ -3311,6 +3328,7 @@ func (r *rpcServer) dispatchPaymentIntent(
 // client via the write end of the stream. This method is by both SendToRoute
 // and SendPayment as the logic is virtually identical.
 func (r *rpcServer) sendPayment(stream *paymentStream) error {
+	fmt.Println("SEND PAYMENT ASYNC")
 	payChan := make(chan *rpcPaymentIntent)
 	errChan := make(chan error, 1)
 
@@ -3420,6 +3438,7 @@ func (r *rpcServer) sendPayment(stream *paymentStream) error {
 					htlcSema <- struct{}{}
 				}()
 
+				fmt.Printf("PAYMENT INTENT: %+v\n", payIntent)
 				resp, saveErr := r.dispatchPaymentIntent(
 					payIntent,
 				)
@@ -3504,7 +3523,7 @@ func (r *rpcServer) SendToRouteSync(ctx context.Context,
 // wait until the payment has been fully completed.
 func (r *rpcServer) sendPaymentSync(ctx context.Context,
 	nextPayment *rpcPaymentRequest) (*lnrpc.SendResponse, error) {
-
+	fmt.Println("SEND PAYMENT SYNC")
 	// We don't allow payments to be sent while the daemon itself is still
 	// syncing as we may be trying to sent a payment over a "stale"
 	// channel.
